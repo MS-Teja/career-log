@@ -2,16 +2,54 @@ import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 import { HttpError } from '../utils/httpError';
 
-const transporter =
-  env.SMTP_USER && env.SMTP_PASS
-    ? nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
-      })
-    : null;
+interface OutgoingMail {
+  to: string;
+  toName: string;
+  subject: string;
+  text: string;
+  html: string;
+}
+type Transport = (mail: OutgoingMail) => Promise<void>;
 
-if (!transporter && env.NODE_ENV !== 'test') {
-  console.log('[mail] SMTP not configured, emails will be printed to this console');
+/** Brevo's transactional email API over HTTPS. */
+function brevoTransport(apiKey: string, from: string): Transport {
+  return async (mail) => {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': apiKey, 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({
+        sender: { name: 'Career Log', email: from },
+        to: [{ email: mail.to, name: mail.toName }],
+        subject: mail.subject,
+        textContent: mail.text,
+        htmlContent: mail.html,
+      }),
+    });
+    if (!res.ok) throw new Error(`Brevo responded ${res.status}: ${await res.text()}`);
+  };
+}
+
+function smtpTransport(user: string, pass: string): Transport {
+  const transporter = nodemailer.createTransport({ service: 'gmail', auth: { user, pass } });
+  return async (mail) => {
+    await transporter.sendMail({ from: `"Career Log" <${user}>`, to: mail.to, subject: mail.subject, text: mail.text, html: mail.html });
+  };
+}
+
+const transport: Transport | null =
+  env.BREVO_API_KEY && (env.MAIL_FROM ?? env.SMTP_USER)
+    ? brevoTransport(env.BREVO_API_KEY, (env.MAIL_FROM ?? env.SMTP_USER)!)
+    : env.SMTP_USER && env.SMTP_PASS
+      ? smtpTransport(env.SMTP_USER, env.SMTP_PASS)
+      : null;
+
+if (env.NODE_ENV !== 'test') {
+  if (env.BREVO_API_KEY && !transport) console.warn('[mail] BREVO_API_KEY is set but MAIL_FROM is missing; emails will not be sent');
+  console.log(
+    transport
+      ? `[mail] sending via ${env.BREVO_API_KEY ? 'Brevo API' : 'Gmail SMTP'}`
+      : '[mail] no email provider configured, emails will be printed to this console',
+  );
 }
 
 function escapeHtml(s: string) {
@@ -36,14 +74,14 @@ interface Mail {
 }
 
 async function send(mail: Mail, { critical }: { critical: boolean }) {
-  if (!transporter || env.NODE_ENV === 'development') {
+  if (!transport || env.NODE_ENV === 'development') {
     if (env.NODE_ENV !== 'test') console.log(`[mail] to ${mail.to}: ${mail.subject}\n       ${mail.text.split('\n').join('\n       ')}`);
   }
-  if (!transporter) return;
+  if (!transport) return;
   try {
-    await transporter.sendMail({
-      from: `"Career Log" <${env.SMTP_USER}>`,
+    await transport({
       to: mail.to,
+      toName: mail.name,
       subject: mail.subject,
       text: `Hi ${mail.name},\n\n${mail.text}`,
       html: layout(mail.name, mail.html),

@@ -32,7 +32,7 @@ A placement experience vault for our college. Seniors log their interviews in a 
    cp server/.env.example server/.env
    # set MONGO_URI, JWT_SECRET (openssl rand -hex 32) and ALLOWED_EMAIL_DOMAIN
    ```
-   Leave `SMTP_USER`/`SMTP_PASS` empty and emails (OTP codes, notifications) print to the API terminal. To send real email, use a Gmail address and an [App Password](https://myaccount.google.com/apppasswords).
+   Leave the email settings empty and emails (OTP codes, notifications) print to the API terminal. To send real email, set `BREVO_API_KEY` + `MAIL_FROM` (see [Email with Brevo](#email-with-brevo)), or a Gmail address and [App Password](https://myaccount.google.com/apppasswords) as `SMTP_USER`/`SMTP_PASS`.
 3. Install, seed, and run:
    ```bash
    npm install
@@ -90,7 +90,16 @@ Career Log runs as **one Render web service**: Express serves both `/api` and th
    - `MONGO_URI`: your Atlas connection string, including `/careerlog` or your database name.
    - `ALLOWED_EMAIL_DOMAIN`: your college domain.
    - `CLIENT_URL`: the service URL, such as `https://career-log.onrender.com`. It's used in email links, and you can fill it in after the first deploy.
-   - `SMTP_USER` / `SMTP_PASS`: Gmail and its App Password. In production, OTP codes are only delivered by email.
+   - `BREVO_API_KEY` / `MAIL_FROM`: see below. Render's free tier blocks SMTP, so Gmail SMTP won't work there. Until these are set, OTP codes only appear in the service's **Logs** tab.
 4. After the first deploy, open the Render **Shell** and run `npm run seed` once if you want demo data.
+
+### Email with Brevo
+
+1. Create a free account at [brevo.com](https://www.brevo.com) (300 emails/day).
+2. **Senders, Domains & Dedicated IPs → Senders → Add a sender**: add the address emails should come from (your Gmail is fine) and click the confirmation link Brevo emails you.
+3. **SMTP & API → API keys → Generate a new API key**.
+4. In Render → your service → **Environment**, set `BREVO_API_KEY` to that key and `MAIL_FROM` to the verified sender address. Saving redeploys the service.
+
+The service log then shows `[mail] sending via Brevo API`. Mail sent through Brevo from a Gmail address can land in spam, so tell testers to check there.
 
 **Free-tier note:** the service sleeps after 15 minutes without traffic, and the next request takes about 50 seconds to wake it. Open the site a minute before a demo.

@@ -1,6 +1,13 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
+// Hosting dashboards often save blank fields as "", so treat empty as unset.
+const optional = () =>
+  z
+    .string()
+    .optional()
+    .transform((v) => v?.trim() || undefined);
+
 const schema = z.object({
   PORT: z.coerce.number().default(5050),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -8,11 +15,14 @@ const schema = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   ALLOWED_EMAIL_DOMAIN: z.string().default(''),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASS: z.string().optional(),
-  CLIENT_URL: z.string().default('http://localhost:5173'),
-  ADMIN_EMAIL: z.string().optional(),
-  ADMIN_PASSWORD: z.string().optional(),
+  // Email: Brevo's HTTP API (works on hosts that block SMTP, e.g. Render's free tier), else Gmail SMTP.
+  BREVO_API_KEY: optional(),
+  MAIL_FROM: optional(),
+  SMTP_USER: optional(),
+  SMTP_PASS: optional(),
+  CLIENT_URL: optional().transform((v) => v ?? 'http://localhost:5173'),
+  ADMIN_EMAIL: optional(),
+  ADMIN_PASSWORD: optional(),
 });
 
 const parsed = schema.safeParse(process.env);
