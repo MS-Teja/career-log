@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: 250 248 245;
+    --surface: 255 255 255;
+    --surface-2: 244 241 236;
+    --ink: 28 27 25;
+    --muted: 107 102 94;
+    --border: 231 226 218;
+    --border-strong: 168 160 148;
+    --accent: 79 70 229;
+    --accent-fg: 255 255 255;
+    --accent-soft: 238 237 252;
+    --success: 22 128 84;
+    --danger: 180 45 45;
+    --danger-fg: 255 255 255;
+    --warning: 140 86 0;
+    --cat-dsa: 84 76 214;
+    --cat-core: 8 110 102;
+    --cat-design: 30 88 186;
+    --cat-aptitude: 140 88 0;
+    --cat-behavioural: 186 40 80;
+    color-scheme: light;
+  }
+
+  .dark {
+    --bg: 22 21 20;
+    --surface: 31 30 28;
+    --surface-2: 40 38 35;
+    --ink: 236 232 225;
+    --muted: 160 154 145;
+    --border: 56 53 49;
+    --border-strong: 110 104 96;
+    --accent: 140 138 250;
+    --accent-fg: 20 19 40;
+    --accent-soft: 44 42 72;
+    --success: 86 196 146;
+    --danger: 240 118 118;
+    --danger-fg: 22 21 20;
+    --warning: 232 178 72;
+    --cat-dsa: 150 144 250;
+    --cat-core: 70 200 185;
+    --cat-design: 110 165 245;
+    --cat-aptitude: 230 175 70;
+    --cat-behavioural: 240 120 155;
+    color-scheme: dark;
+  }
+
+  html {
+    @apply bg-bg text-ink antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  body {
+    @apply min-h-screen bg-bg font-sans text-[15px] leading-relaxed;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply text-ink;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-bg;
+  }
+  ::selection {
+    @apply bg-accent/20;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+  }
+  .meta {
+    @apply font-mono text-xs tabular-nums text-muted;
+  }
+  .prose-notebook {
+    @apply whitespace-pre-line font-serif text-[17px] leading-[1.75] text-ink;
+  }
+  .page-title {
+    @apply font-serif text-page font-medium tracking-tight;
+  }
+}
